@@ -25,7 +25,7 @@
 #define TEXTW(X)              (drw_fontset_getwidth(drw, (X)) + lrpad)
 
 /* enums */
-enum { SchemeNorm, SchemeSel, SchemeOut, SchemeLast }; /* color schemes */
+enum { SchemeNorm, SchemeSel, SchemeOut, SchemeMore, SchemeLast }; /* color schemes */
 
 struct item {
 	char *text;
@@ -168,9 +168,17 @@ drawmenu(void)
 	}
 
 	if (lines > 0) {
+		int itemcounter = lines;
 		/* draw vertical list */
-		for (item = curr; item != next; item = item->right)
+		for (item = curr; item != next; item = item->right) {
 			drawitem(item, x, y += bh, mw - x);
+			itemcounter--;
+		}
+
+		if (itemcounter == 0) { // menu is full
+			drw_setscheme(drw, scheme[SchemeMore]);
+			drw_text(drw, x, y += bh, w, bh, lrpad / 2, "...more...", 0);
+		}
 	} else if (matches) {
 		/* draw horizontal list */
 		x += inputw;
@@ -187,6 +195,7 @@ drawmenu(void)
 			drw_setscheme(drw, scheme[SchemeNorm]);
 			drw_text(drw, mw - w, 0, w, bh, lrpad / 2, ">", 0);
 		}
+
 	}
 	drw_map(drw, win, 0, 0, mw, mh);
 }
@@ -632,10 +641,10 @@ setup(void)
 	clip = XInternAtom(dpy, "CLIPBOARD",   False);
 	utf8 = XInternAtom(dpy, "UTF8_STRING", False);
 
-	/* calculate menu geometry */
+	/* calculate menu geometry -- IMPORTANT */
 	bh = drw->fonts->h + 2;
 	lines = MAX(lines, 0);
-	mh = (lines + 1) * bh;
+	mh = (lines + 2) * bh; /* add extra row for more item indicator */
 #ifdef XINERAMA
 	i = 0;
 	if (parentwin == root && (info = XineramaQueryScreens(dpy, &n))) {
